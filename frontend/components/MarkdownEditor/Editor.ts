@@ -1,22 +1,23 @@
 import MarkdownUtil from '~/components/MarkdownEditor/Utils';
-import { type Snippet, snippets } from './snippets';
+import { snippets } from './snippets';
 
 export class Editor extends EventTarget {
   public area: Ref<HTMLTextAreaElement | undefined>; // The editor area
   public util: MarkdownUtil; // The markdown utility formatter
-  public showPreview: Ref<boolean> = ref(false); // Whether to show the preview or not
+  public showPreview: Ref<boolean>; // Whether to show the preview or not
   public container: Ref<HTMLElement | undefined>; // The container element
   public inlineToolbar: Ref<{ element: HTMLElement } | undefined>;
 
-  constructor(area: Ref<HTMLTextAreaElement | undefined>, inlineToolbar: Ref<{ element: HTMLElement } | undefined>, container: Ref<HTMLElement | undefined>) {
+  constructor(area: Ref<HTMLTextAreaElement | undefined>, inlineToolbar: Ref<{ element: HTMLElement } | undefined>, container: Ref<HTMLElement | undefined>, opts: EditorOptions = {}) {
     super();
     this.area = area;
     this.inlineToolbar = inlineToolbar as Ref<{ element: HTMLElement }>;
     this.util = new MarkdownUtil(area);
     this.container = container;
+    this.showPreview = opts.showPreview ? ref(true) : ref(false);
   }
 
-  public format(action: string) {
+  public actions(action: string) {
     switch (action) {
       case 'blue':
         this.util.inlineFormat('<blue>', '</blue>');
@@ -63,6 +64,9 @@ export class Editor extends EventTarget {
       case 'orderedList':
         this.util.inlineFormat('1. ', '');
         break;
+      case 'preview':
+        this.showPreview.value = !this.showPreview.value;
+        break;
     }
   }
   public handleKeydown(event: KeyboardEvent) {
@@ -75,31 +79,38 @@ export class Editor extends EventTarget {
     // Ctrl + B for bold
     if (event.ctrlKey && event.key === 'b') {
       event.preventDefault();
-      this.format('bold');
+      this.actions('bold');
     }
     // Ctrl + I for italic
     if (event.ctrlKey && event.key === 'i') {
       event.preventDefault();
-      this.format('italic');
+      this.actions('italic');
     }
     // Ctrl + U for underline
     if (event.ctrlKey && event.key === 'u') {
       event.preventDefault();
-      this.format('underline');
+      this.actions('underline');
     }
     // Ctrl + K for link
     if (event.ctrlKey && event.key === 'k') {
       event.preventDefault();
-      this.format('link');
+      this.actions('link');
     }
     if (event.ctrlKey && event.key === 'm') {
       event.preventDefault();
-      this.format('image');
+      this.actions('image');
     }
     // Ctrl + S for saving
     if (event.ctrlKey && event.key === 's') {
       event.preventDefault();
       this.dispatchEvent(new Event('save'));
+    }
+    if (event.ctrlKey && event.key === 'x') {
+      // If no text is selected, exit editor
+      if (this.area.value!.selectionStart === this.area.value!.selectionEnd) {
+        event.preventDefault();
+        this.dispatchEvent(new Event('exit'));
+      }
     }
     // Ctrl + P for preview
     if (event.ctrlKey && event.key === 'p') {
@@ -130,12 +141,14 @@ export class Editor extends EventTarget {
     // Prevent the default space character from being inserted
     return true;
   }
-  public handleInlineToolbar() {
+  public async handleInlineToolbar() {
+    await new Promise(resolve => setTimeout(resolve, 10));
     if (!this.inlineToolbar?.value?.element) return;
     const toolbarElement = this.inlineToolbar.value.element;
     toolbarElement.style.display = 'none';
     const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0 || selection.toString().length == 0) return;
+    if (!selection || selection.rangeCount === 0 || selection.toString().trim().length == 0) return;
+    if (selection.getRangeAt(0).startContainer != this.area.value?.parentElement) return;
     const { top, left } = this.getCaretPosition();
     if (top - this.area.value!.scrollTop + 25 < 0) return;
     toolbarElement.style.top = `${top - this.area.value!.scrollTop + 25}px`;
@@ -190,4 +203,9 @@ export class Editor extends EventTarget {
 
     return { top, left };
   }
+}
+
+export interface EditorOptions {
+  showPreview?: boolean;
+  toolbar?: 'minimal' | 'complete';
 }

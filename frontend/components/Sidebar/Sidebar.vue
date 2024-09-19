@@ -13,40 +13,57 @@
 
       <div class="user" v-if="userStore.user">
         <img :src="useAvatar(userStore.user)" alt="Avatar" style="width: 25px; height: 25px; border-radius: 50%" />
-        <div>
-          <div>{{ userStore.user.username }}</div>
-          <div class="email">{{ userStore.user.email }}</div>
+        <div class="details">
+          <div>
+            <div>{{ userStore.user.username }}</div>
+            <div class="email">{{ userStore.user.email }}</div>
+          </div>
+          <Icon name="logout" @click="logoutUser" class="logout" />
         </div>
       </div>
+      <SidebarWorkspaces :options="workspaces" />
       <Search />
-      <CollapseItem v-for="(item, index) in items" :key="index" :item="item" :root="true" />
+      <CollapseItem v-for="item in items" :key="item.id" :item="item" :root="true" />
     </div>
   </Resizable>
 </template>
 
 <script setup lang="ts">
 import CollapseItem from './CollapseItem.vue';
+import SidebarWorkspaces from './SidebarWorkspaces.vue';
 import Resizable from './Resizable.vue';
 import IconClose from './IconClose.vue';
-import IconApp from './IconApp.vue';
 import Search from './Search.vue';
 import { ItemsManager, type Item } from './tree_builder';
 import { navigationItems } from './helpers';
 import type { Category } from '~/stores';
 
-const { isOpened, hasSidebar } = useSidebar();
+const { isOpened, hasSidebar, workspaceId } = useSidebar();
 const categoriesStore = useCategoriesStore();
 const documentsStore = useDocumentsStore();
 const userStore = useUserStore();
 const filter = ref<string>('');
 const showSearchModal = ref<boolean>(false);
+const workspaces = computed(() => [{ text: 'All workspaces', value: null }, ...categoriesStore.categories.filter(c => c.role === 2).map(c => ({ text: c.name, value: c.id }))]);
 
 const handleSearchShortCut = (e: KeyboardEvent) => {
   if (e.ctrlKey && e.key === 'q') showSearchModal.value = !showSearchModal.value;
 };
 
+if (import.meta.client && useUserStore().user?.role === 2) {
+  if (navigationItems[navigationItems.length - 1]?.id !== 'manage-users')
+    navigationItems.push({
+      id: 'manage-users',
+      type: 'default',
+      title: 'Manage users',
+      icon: 'users',
+      route: '/dashboard/admin/users',
+      childrens: [],
+    });
+}
+
 const items = computed((): Item[] => {
-  const navigation: Item[] = navigationItems.map(item => ({ id: item.id, parent_id: '', title: item.title, route: item.route, icon: item.icon, type: 'navigation', data: item }));
+  const navigation: Item[] = navigationItems.map(item => ({ id: item.id, parent_id: '', title: item.title, route: item.route, icon: item.icon, type: 'navigation', data: item, show: ref(true) }));
   const categories: Item[] = categoriesStore.categories
     .map((category: Category) => ({
       id: category.id,
@@ -55,8 +72,9 @@ const items = computed((): Item[] => {
       route: category.parent_id ? `/dashboard/categories/${category.id}` : '',
       icon: category.icon,
       data: category,
+      show: !category.parent_id && localStorage.getItem(`collapse-${category.id}`) === 'false' ? ref(false) : ref(true),
     }))
-    .filter(c => c.data.name.toLowerCase().includes(filter.value.toLowerCase()));
+    .filter(c => c.data.role === 1 && c.data.name.toLowerCase().includes(filter.value.toLowerCase()));
   const documents: Item[] = documentsStore.documents
     .map(document => ({
       id: document.id,
@@ -64,11 +82,15 @@ const items = computed((): Item[] => {
       title: document.name,
       route: `/dashboard/docs/${document.id}`,
       data: document,
+      show: ref(true),
     }))
     .filter(c => c.data.name.toLowerCase().includes(filter.value.toLowerCase()));
 
-  if (filter.value) return new ItemsManager([...navigation, ...documents]).generateTree();
-  return new ItemsManager([...navigation, ...documents, ...categories]).generateTree();
+  return new ItemsManager([...navigation, ...documents, ...categories]).generateTree().filter(c => {
+    if (c.data.type === 'category' && workspaceId.value) return c.data.workspace_id == workspaceId.value;
+    if (c.data.type === 'document' && workspaceId.value) return c.data.category === workspaceId.value;
+    return true;
+  });
 });
 
 const handleClickOutside = (e: MouseEvent) => {
@@ -77,21 +99,21 @@ const handleClickOutside = (e: MouseEvent) => {
 
 onMounted(() => {
   hasSidebar.value = true;
-  if (isMobile()) return window.addEventListener('click', handleClickOutside);
+  if (isMobile()) return document.addEventListener('click', handleClickOutside);
   // ELSE: Desktop
   isOpened.value = true;
   document.addEventListener('keypress', handleSearchShortCut);
 });
 onBeforeUnmount(() => {
   hasSidebar.value = false;
-  window.removeEventListener('click', handleClickOutside);
+  document.removeEventListener('click', handleClickOutside);
   document.removeEventListener('keypress', handleSearchShortCut);
 });
 </script>
 
 <style scoped lang="scss">
 .sidebar {
-  margin: 0 0 0 10px;
+  padding: 0 0 0 10px;
 }
 
 .header {
@@ -111,7 +133,6 @@ onBeforeUnmount(() => {
     align-items: center;
     font-size: 1rem;
     font-weight: 400;
-    font-family: Inter;
   }
 }
 
@@ -132,12 +153,25 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   margin: 4px 0 0 5px;
-  div {
+  .details {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
     font-size: 0.85rem;
     margin-left: 5px;
     .email {
       font-size: 0.7rem;
       color: var(--font-color-light);
+    }
+    .logout {
+      display: none;
+      cursor: pointer;
+    }
+  }
+  &:hover {
+    .logout {
+      display: block;
+      opacity: 0.8;
     }
   }
 }

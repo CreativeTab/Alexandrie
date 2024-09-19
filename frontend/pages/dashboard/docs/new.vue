@@ -2,12 +2,15 @@
   <MarkdownEditor ref="editor" :doc="document" @save="data => save(data)" />
 </template>
 <script lang="ts" setup>
+import MarkdownEditor from '~/components/MarkdownEditor/MarkdownEditor.vue';
 import type { Document } from '@/stores';
-import MarkdownEditor from '~/components/MarkdownEditor/LazyMarkdownEditor.vue';
 
 const store = useDocumentsStore();
 const editor = ref();
-const document = ref<Document | undefined>();
+const document = ref<Partial<Document>>({
+  category: useSidebar().workspaceId.value || undefined,
+  accessibility: 1,
+});
 const notifications = useNotifications();
 
 definePageMeta({ breadcrumb: 'New' });

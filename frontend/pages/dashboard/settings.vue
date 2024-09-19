@@ -17,6 +17,8 @@
         <span>Workspaces</span>
         <NuxtLink to="/dashboard/categories"><Icon fill="var(--font-color)" name="categories" />Manage categories</NuxtLink>
         <NuxtLink to="/dashboard/docs"><Icon fill="var(--font-color)" name="draft" />Manage documents</NuxtLink>
+        <span>Other</span>
+        <NuxtLink @click="logoutUser"><Icon fill="var(--font-color)" name="logout" />Logout</NuxtLink>
       </nav>
       <div class="content">
         <button @click="close" class="close-btn"><Icon name="close" :big="true" /></button>
@@ -44,7 +46,7 @@
               <img :src="avatarPreview || useAvatar(store.user)" class="avatar" @click="selectAvatar" />
               <input ref="avatarInput" type="file" accept="image/*" @change="previewAvatar" style="display: none" />
             </div>
-            <button type="submit" class="btn primary">Update</button>
+            <AppButton type="primary">Update profile</AppButton>
           </form>
         </div>
         <div v-show="currentPage === 'preferences'" class="page preferences">
@@ -80,23 +82,26 @@
               <input id="password" type="password" required v-model="passwordValue" />
             </div>
             <div class="form-group">
-              <label for="password_confirm">Confirm password</label>
+              <span style="display: flex"><label for="password_confirm">Confirm password</label> <span v-if="errorMessages.passwordNotMatch" class="err"> Password do not match !</span></span>
               <input id="password_confirm" type="password" required v-model="passwordConfirmValue" />
             </div>
-            <button type="submit" class="btn primary">Update</button>
+            <AppButton type="danger">Change password</AppButton>
           </form>
+          <h2>Danger</h2>
+          <AppButton type="danger" @click="logoutUser">Log out</AppButton>
+          <AppButton type="danger" @click="logoutUserAll">Log out from all devices</AppButton>
         </div>
         <div v-show="currentPage == 'backup'" class="page backup_page">
           <h1>Create a Database Backup</h1>
           <p>Click the button below to create a backup of your database.</p>
-          <button @click="submitFile" class="btn primary">Create Backup</button>
+          <AppButton @click="submitFile" type="primary">Create Backup</AppButton>
           <div v-if="isLoading" class="loading-spinner"></div>
           <div class="link-section" v-if="downloadLink">
             <p>Your backup is ready. You can copy the link to share it or download it.</p>
             <input type="text" v-model="downloadLink" readonly placeholder="Backup Link" />
             <div style="display: flex">
-              <button @click="copyLink" class="btn secondary">Copy Link</button>
-              <a :href="downloadLink" download><button class="btn primary">Download Backup</button></a>
+              <AppButton @click="copyLink" type="secondary">Copy Link</AppButton>
+              <a :href="downloadLink" download><AppButton type="primary">Download Backup</AppButton></a>
             </div>
           </div>
         </div>
@@ -113,10 +118,14 @@ const ressourcesStore = useRessourcesStore();
 const avatarInput = ref<HTMLInputElement | null>(null);
 const passwordValue = ref('');
 const passwordConfirmValue = ref('');
+const router = useRouter();
+const errorMessages = ref({
+  passwordNotMatch: false,
+});
 
 watchEffect(() => (currentPage.value = route.query.p || 'profile'));
 
-const close = () => useRouter().push('/dashboard');
+const close = () => router.push('/dashboard');
 const avatarPreview = ref('');
 const selectAvatar = () => avatarInput.value?.click();
 
@@ -150,7 +159,7 @@ const updateUser = async () => {
 };
 const changePassword = async () => {
   if (!store.user) return;
-  if (passwordValue.value !== passwordConfirmValue.value) return;
+  if (passwordValue.value !== passwordConfirmValue.value) return (errorMessages.value.passwordNotMatch = true);
   store.updatePassword(passwordValue.value);
 };
 
@@ -181,7 +190,6 @@ async function submitFile() {
   max-width: calc(-100px + 100vw);
   max-height: 715px;
   margin: auto;
-
   nav {
     gap: 1rem;
     background-color: var(--bg-contrast);
@@ -229,6 +237,7 @@ async function submitFile() {
   position: relative;
   flex: 1;
   padding: 2rem;
+  overflow-y: auto;
 }
 .close-btn {
   position: absolute;
@@ -245,6 +254,11 @@ form {
     display: flex;
     flex-direction: column;
   }
+}
+.err {
+  color: $red;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.8rem;
 }
 .profil_page {
   .avatar-group {
@@ -274,7 +288,7 @@ form {
   }
 
   .warning {
-    color: var(--red);
+    color: $red;
     font-size: 0.9rem;
   }
 }

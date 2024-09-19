@@ -1,7 +1,8 @@
 <template>
   <div class="container">
+    <AppHeader />
     <form @submit.prevent="login" class="body">
-      <p class="signup-link">Need an account? <a href="mailto:rveauville@gmail.com">Sign up</a></p>
+      <NuxtLink to="/signup" class="signup-link">Need an account? Sign up</NuxtLink>
       <div class="form-group">
         <label for="username">Username</label>
         <input type="username" id="username" v-model="username" :class="{ 'is-invalid': errors.username }" />
@@ -19,10 +20,10 @@
       <p v-if="errors.general" class="invalid-feedback">{{ errors.general }}</p>
       <p class="forgot-password-link">Forgot your password? <a href="mailto:rveauville@gmail.com">Click here</a></p>
     </form>
+    <AppFooter />
   </div>
 </template>
 <script setup lang="ts">
-const router = useRouter();
 const username = ref('');
 const errors = ref({
   username: '',
@@ -47,23 +48,27 @@ function login() {
 
 async function connect(username: string, password: string) {
   const result = await userStore.login(username, password);
-  if (result == true) router.push('/dashboard');
+  if (result == true) useRouter().push('/dashboard');
   else errors.value.general = String(result);
 }
 </script>
 <style scoped lang="scss">
 .container {
+  height: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  height: 100%;
-  justify-content: center;
+  justify-content: space-between;
+  flex-grow: 1;
+  padding-top: 1.5rem;
+  width: 95%;
+  margin: 0 auto;
 }
 
 .body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  margin: 0 auto;
   width: 100%;
   max-width: 620px;
   padding: 3rem;
@@ -116,7 +121,7 @@ async function connect(username: string, password: string) {
   border-radius: 50px;
   width: 100%;
   background-color: $primary-300;
-
+  color: white;
   &:hover {
     background: $primary-500;
     transform: none;

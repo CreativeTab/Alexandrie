@@ -20,10 +20,10 @@ export async function makeRequest<T>(route: string, method: string, body: Object
 
   try {
     const response = await customFetch(method, route, body);
+    const decoded = await response.json();
 
-    if (response.status === 401) {
+    if ((response.status === 401 && decoded.message === 'Bad access token.') || decoded.message === 'Missing token cookies.') {
       if (is_getting_new_token) return promise;
-
       console.log('\x1b[41m[AUTH]\x1b[0m Access token invalid. Getting new access token...');
       is_getting_new_token = true;
       const login = await useAPI('GET', `auth/refreshToken`, {});
@@ -35,7 +35,6 @@ export async function makeRequest<T>(route: string, method: string, body: Object
 
       return promise;
     }
-    const decoded = await response.json();
     return decoded;
   } catch (e) {
     return { status: 'error', message: String(e) };
@@ -49,7 +48,7 @@ function treatQueue(access_token: boolean = true) {
     for (const request of requestQueue) {
       request.resolve({ status: 'error', message: 'Failed to fetch.' });
     }
-    useUserStore().logout();
+    useUserStore().post_logout();
     navigateTo('/login');
   } else {
     for (const request of requestQueue) {

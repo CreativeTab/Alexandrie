@@ -5,7 +5,7 @@ export interface DB_Document {
   tags?: string;
   category?: string;
   parent_id?: string | null;
-  accessibility: number; // 0: No; 1: Yes;
+  accessibility: number; // 1 Visible; 2 Draft; 3 Archived;
   content_markdown?: string;
   content_html?: string;
   author_id: string;
@@ -21,6 +21,8 @@ export interface DB_Category {
   name: string;
   icon?: string;
   order?: number;
+  role: number; // 1 Category; 2 Workspace
+  workspace_id?: string;
   parent_id?: string;
 }
 export interface Category extends DB_Category {
@@ -32,9 +34,12 @@ export interface User {
   username: string;
   firstname?: string;
   lastname?: string;
+  role: number; // 0: User; 1: Admin;
   avatar?: string;
+  password?: string;
   email: string;
   created_timestamp: string;
+  updated_timestamp?: string;
 }
 
 export interface ConnectionLog {

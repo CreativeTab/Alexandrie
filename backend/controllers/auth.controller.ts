@@ -19,8 +19,8 @@ export default class Authentification extends BaseController<UsersManager> {
   public async login(req: Request, res: Response) {
     try {
       const user = await this.manager.get(req.body.username);
-      if (!user) throw new Error('Bad username/password.');
-      if (!(await this.check_password(user, req.body.password))) throw new Error('Bad username/password.');
+      if (!user) throw 'Bad username or password.';
+      if (!(await this.check_password(user, req.body.password))) throw 'Bad username or password.';
       const session: Session = {
         id: this.app.snowflake.generate().toString(),
         user_id: user.id,
@@ -42,11 +42,35 @@ export default class Authentification extends BaseController<UsersManager> {
       res.status(500).json(this.utils.error(e));
     }
   }
-  public logout(_: Request, res: Response): void {
-    res.clearCookie('user_auth', { domain: process.env.FRONT_DOMAIN });
-    res.clearCookie('user_id', { domain: process.env.FRONT_DOMAIN });
-    res.clearCookie('user_token', { domain: process.env.FRONT_DOMAIN });
-    res.status(200).json(this.utils.success({ auth: false }));
+  public async logout(req: Request, res: Response) {
+    try {
+      res.clearCookie('user_auth', { domain: process.env.FRONT_DOMAIN });
+      res.clearCookie('user_id', { domain: process.env.FRONT_DOMAIN });
+      res.clearCookie('user_token', { domain: process.env.FRONT_DOMAIN });
+      res.clearCookie('user_refresh_token', { domain: process.env.FRONT_DOMAIN });
+
+      // Mark session as inactive
+      const refreshToken = req.cookies.user_refresh_token;
+      if (refreshToken) await this.sessions.markSessionInactive(refreshToken);
+
+      res.status(200).json(this.utils.success({ auth: false }));
+    } catch (e) {
+      res.status(500).json(this.utils.error(e));
+    }
+  }
+  public async logout_all(req: Request, res: Response) {
+    try {
+      const refreshToken = req.cookies.user_refresh_token;
+      if (!req.user_id) throw 'No user id provided';
+      if (refreshToken) await this.sessions.markAllSessionsInactive(req.user_id);
+      res.clearCookie('user_auth', { domain: process.env.FRONT_DOMAIN });
+      res.clearCookie('user_id', { domain: process.env.FRONT_DOMAIN });
+      res.clearCookie('user_token', { domain: process.env.FRONT_DOMAIN });
+      res.clearCookie('user_refresh_token', { domain: process.env.FRONT_DOMAIN });
+      res.status(200).json(this.utils.success({ auth: false }));
+    } catch (e) {
+      res.status(500).json(this.utils.error(e));
+    }
   }
 
   public async refresh_session(req: Request, res: Response) {
@@ -86,7 +110,7 @@ export default class Authentification extends BaseController<UsersManager> {
     return valid;
   }
   private sign_access_token(user: User): string {
-    return sign({ userId: user.id }, process.env.JWT_SECRET || '', {
+    return sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET || '', {
       expiresIn: this.app.config.access_token_expiration,
     });
   }
