@@ -73,7 +73,21 @@ body {
 	}
 }
 
+form {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+
+	.form-group {
+		display: flex;
+		flex-direction: column;
+	}
+}
+
 @media print {
+	:root {
+		@include print-theme;
+	}
 
 	header,
 	footer,

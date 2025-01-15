@@ -1,8 +1,9 @@
 <template>
   <span class="item" @click="onClick" :draggable="draggable" @dragstart="dragStart" @dragover.prevent="dragOver" @drop="drop" @dragleave="dragLeave" :class="{ 'drag-over': isDragOver }" :key="item.id">
     <Icon :name="getIcon()" />
-    <NuxtLink :to="item.route" style="width: 100%">{{ item.title }} </NuxtLink>
-    <NuxtLink to="/dashboard/docs/new" class="new" v-if="item.data.type === 'category' && item.parent_id"> <Icon name="plus" fill="var(--font-color)" /> </NuxtLink>
+    <NuxtLink :to="item.route" style="width: 100%" class="close">{{ item.title }} </NuxtLink>
+    <NuxtLink v-if="item.data.type === 'category'" :to="`/dashboard/categories/${item.id}/edit`" class="nav close"> <Icon name="c_settings" fill="var(--font-color)" /> </NuxtLink>
+    <NuxtLink v-if="item.data.type === 'category' && item.parent_id" to="/dashboard/docs/new" class="nav close"> <Icon name="plus" fill="var(--font-color)" /> </NuxtLink>
     <slot></slot>
   </span>
 </template>
@@ -28,7 +29,9 @@ function getIcon() {
 const draggable = ref<boolean>(true);
 const isDragOver = ref<boolean>(false);
 
-const onClick = () => {
+const onClick = (m: MouseEvent) => {
+  // if element does not have the "close" class, don't close the sidebar
+  if (!(m.target as HTMLElement).closest('.close')) return;
   if (isMobile() && props.item.route) isOpened.value = false;
 };
 
@@ -92,13 +95,14 @@ const drop = async (event: DragEvent) => {
   align-items: center;
   padding: 0 2.5px;
   margin: 2.5px 0;
-  border-radius: 5px;
+  border-radius: 7px;
   color: var(--font-color);
   cursor: pointer;
   width: 98%;
   font-size: 15.5px;
+  font-weight: 400;
   &:hover,
-  &:has(.router-link-exact-active:not(.new)) {
+  &:has(.router-link-exact-active:not(.nav)) {
     background: var(--bg-contrast-2);
   }
 
@@ -107,29 +111,29 @@ const drop = async (event: DragEvent) => {
     align-items: center;
 
     &:deep(svg) {
-      fill: var(--blue);
-      width: 20px;
-      max-height: 22px;
+      fill: $primary-color;
+      width: 19px;
+      max-height: 21px;
       margin-right: 5px;
 
       path {
-        fill: var(--blue);
+        fill: $primary-color;
       }
     }
   }
 }
 
 .drag-over {
-  border-bottom: 2px solid var(--blue);
+  border-bottom: 2px solid $primary-color;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
-.new {
+.nav {
   display: none;
   &:deep(svg) {
     fill: inherit !important;
   }
 }
-.item:hover .new {
+.item:hover .nav {
   display: block;
 }
 </style>

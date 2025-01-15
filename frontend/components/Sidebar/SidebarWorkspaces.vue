@@ -14,10 +14,13 @@
 <script setup lang="ts">
 import AppSelectOption from './SidebarWorkspace.vue';
 import type { Workspace } from './helpers';
-const { workspaceId } = useSidebar();
-workspaceId.value = localStorage.getItem('filterWorkspace');
 
+const { workspaceId } = useSidebar();
+const storage_item = localStorage.getItem('filterWorkspace');
 const props = defineProps<{ options: Workspace[] }>();
+
+if (storage_item && props.options.find(option => option.value == storage_item)) workspaceId.value = storage_item;
+
 const isOpen = ref(false);
 const selectedOption = computed(() => props.options.find(option => option.value == workspaceId.value) || props.options.find(option => !option.value));
 const toggleDropdown = () => (isOpen.value = !isOpen.value);
@@ -39,6 +42,7 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
 .dropdown-container {
   position: relative;
   width: calc(100% - 4px);
+  padding: 0 1px;
 }
 
 .dropdown-selected {
@@ -57,13 +61,13 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
 
 .dropdown-selected.open {
   border-color: var(--selection-color);
-  box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+  box-shadow: 0 0 5px var(--border-color);
 }
 
 .dropdown-arrow {
   width: 8px;
   height: 8px;
-  border: solid #333;
+  border: solid var(--font-color);
   border-width: 0 2px 2px 0;
   padding: 4px;
   transform: rotate(-45deg);

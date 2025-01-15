@@ -7,7 +7,7 @@
       <div class="category-card main-category">
         {{ mainCategory.name }}
         <div class="action-menu">
-          <NuxtLink :to="'/dashboard/categories/edit?category=' + mainCategory.id">✎</NuxtLink>
+          <NuxtLink :to="`/dashboard/categories/${mainCategory.id}/edit`">✎</NuxtLink>
         </div>
       </div>
 
@@ -16,7 +16,7 @@
         <div v-for="subCategory in categoriesStore.getChilds(mainCategory.id)" :key="subCategory.id" class="category-card sub-category">
           {{ subCategory.name }}
           <div class="action-menu">
-            <NuxtLink :to="'/dashboard/categories/edit?category=' + subCategory.id">✎</NuxtLink>
+            <NuxtLink :to="`/dashboard/categories/${subCategory.id}/edit`">✎</NuxtLink>
           </div>
         </div>
       </div>
@@ -34,7 +34,7 @@
 
 .add-category-btn {
   background: none;
-  color: var(--blue);
+  color: $primary-color;
   cursor: pointer;
   font-size: 1.1em;
   margin-top: 20px;

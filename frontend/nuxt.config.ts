@@ -15,7 +15,18 @@ export default defineNuxtConfig({
       },
     },
   },
-
+  $production: {
+    ignore: [
+      '**/*.stories.{js,cts,mts,ts,jsx,tsx}',
+      '**/*.{spec,test}.{js,cts,mts,ts,jsx,tsx}',
+      '**/*.d.{cts,mts,ts}',
+      '**/.{pnpm-store,vercel,netlify,output,git,cache,data}',
+      '.nuxt/analyze',
+      '.nuxt',
+      '**/-*.*', //
+      'pages/**/_*',
+    ],
+  },
   ssr: false,
   css: ['~/styles/main.scss', '~/styles/katex/katex.min.css'],
   modules: ['@pinia/nuxt', '@nuxtjs/color-mode'],
@@ -40,7 +51,7 @@ export default defineNuxtConfig({
       meta: [
         { name: 'author', content: 'Smaug6739' },
         { name: 'description', content: 'A website for taking beautiful notes in extended Markdown format.' },
-        { name: 'apple-mobile-web-app-capable', content: 'yes' },
+        { name: 'mobile-web-app-capable" content', content: 'yes' },
         { name: 'apple-mobile-web-app-title', content: 'Alexandrie' },
         { name: 'application-name', content: 'Alexandrie' },
         { name: 'theme-color', content: '#007aff' },
